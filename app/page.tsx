@@ -1,65 +1,66 @@
-import Image from "next/image";
+import Link from "next/link";
+import { BookCard } from "@/components/book-card";
+import { Button } from "@/components/ui/button";
+import { getFeaturedBooks, getNewArrivals } from "@/lib/books";
 
-export default function Home() {
+export default async function HomePage() {
+  const [featured, newArrivals] = await Promise.all([getFeaturedBooks(), getNewArrivals()]);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="mx-auto max-w-6xl space-y-16 px-4 py-12">
+      <section className="space-y-4 py-12 text-center">
+        <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
+          Discover, read, and publish ebooks on ReadHive
+        </h1>
+        <p className="mx-auto max-w-2xl text-muted-foreground">
+          A trusted digital library and online bookstore where authors share their
+          work and readers find their next favourite book.
+        </p>
+        <div className="flex justify-center gap-4">
+          <Button render={<Link href="/shop">Browse Books</Link>} size="lg" />
+          <Button
+            render={<Link href="/register">Become an Author</Link>}
+            size="lg"
+            variant="outline"
+          />
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      </section>
+
+      <section className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-semibold">Featured Books</h2>
+          <Link href="/shop" className="text-sm text-muted-foreground hover:text-foreground">
+            View all
+          </Link>
         </div>
-      </main>
+        {featured.length > 0 ? (
+          <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4">
+            {featured.map((book) => (
+              <BookCard key={book.id} book={book} />
+            ))}
+          </div>
+        ) : (
+          <p className="text-muted-foreground">No books available yet. Check back soon!</p>
+        )}
+      </section>
+
+      <section className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-semibold">New Arrivals</h2>
+          <Link href="/shop" className="text-sm text-muted-foreground hover:text-foreground">
+            View all
+          </Link>
+        </div>
+        {newArrivals.length > 0 ? (
+          <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4">
+            {newArrivals.map((book) => (
+              <BookCard key={book.id} book={book} />
+            ))}
+          </div>
+        ) : (
+          <p className="text-muted-foreground">No books available yet. Check back soon!</p>
+        )}
+      </section>
     </div>
   );
 }

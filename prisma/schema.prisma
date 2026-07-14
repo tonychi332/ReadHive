@@ -1,0 +1,116 @@
+// ReadHive database schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum BookStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum PurchaseStatus {
+  COMPLETED
+  REFUNDED
+}
+
+enum WithdrawalStatus {
+  PENDING
+  PAID
+  REJECTED
+}
+
+model User {
+  id            String         @id @default(cuid())
+  name          String
+  email         String         @unique
+  passwordHash  String
+  role          Role           @default(USER)
+  authorProfile AuthorProfile?
+  purchases     Purchase[]
+  favourites    Favourite[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model AuthorProfile {
+  id                 String              @id @default(cuid())
+  userId             String              @unique
+  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bio                String?
+  walletBalance      Decimal             @default(0) @db.Decimal(10, 2)
+  books              Book[]
+  withdrawalRequests WithdrawalRequest[]
+  createdAt          DateTime            @default(now())
+}
+
+model Book {
+  id            String        @id @default(cuid())
+  title         String
+  description   String
+  price         Decimal       @db.Decimal(10, 2)
+  category      String?
+  coverImageUrl String?
+  fileUrl       String?
+  status        BookStatus    @default(PENDING)
+  authorId      String
+  author        AuthorProfile @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  purchases     Purchase[]
+  favourites    Favourite[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([status])
+  @@index([category])
+}
+
+model Purchase {
+  id               String         @id @default(cuid())
+  userId           String
+  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookId           String
+  book             Book           @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  amount           Decimal        @db.Decimal(10, 2)
+  authorEarnings   Decimal        @db.Decimal(10, 2)
+  platformEarnings Decimal        @db.Decimal(10, 2)
+  status           PurchaseStatus @default(COMPLETED)
+  createdAt        DateTime       @default(now())
+
+  @@unique([userId, bookId])
+}
+
+model Favourite {
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookId    String
+  book      Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([userId, bookId])
+}
+
+model WithdrawalRequest {
+  id        String           @id @default(cuid())
+  authorId  String
+  author    AuthorProfile    @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  amount    Decimal          @db.Decimal(10, 2)
+  status    WithdrawalStatus @default(PENDING)
+  createdAt DateTime         @default(now())
+}
+
+// Singleton row (id always 1) holding marketplace-wide settings
+model PlatformSettings {
+  id             Int     @id @default(1)
+  commissionRate Decimal @default(0.40) @db.Decimal(4, 2)
+}
