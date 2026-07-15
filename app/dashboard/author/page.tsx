@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/table";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { WithdrawalRequestForm } from "@/components/withdrawal-request-form";
 
 export const metadata: Metadata = {
   title: "Author Dashboard — ReadHive",
@@ -52,8 +53,10 @@ export default async function AuthorDashboardPage() {
     redirect("/dashboard/reader");
   }
 
-  const booksPublished = authorProfile.books.filter((book) => book.status === "APPROVED").length;
-  const totalSales = authorProfile.books.reduce((sum, book) => sum + book._count.purchases, 0);
+  const booksPublished = authorProfile.books.filter((b) => b.status === "APPROVED").length;
+  const totalSales = authorProfile.books.reduce((sum, b) => sum + b._count.purchases, 0);
+  const walletBalance = authorProfile.walletBalance.toNumber();
+  const hasPending = authorProfile.withdrawalRequests.some((r) => r.status === "PENDING");
 
   return (
     <div className="mx-auto max-w-6xl space-y-10 px-4 py-12">
@@ -65,15 +68,14 @@ export default async function AuthorDashboardPage() {
         <Button render={<Link href="/dashboard/author/upload">Upload a book</Link>} />
       </div>
 
+      {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-3">
         <Card>
           <CardHeader>
             <CardTitle className="text-sm text-muted-foreground">Wallet balance</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">
-              ${authorProfile.walletBalance.toNumber().toFixed(2)}
-            </p>
+            <p className="text-2xl font-bold">₦{walletBalance.toFixed(2)}</p>
           </CardContent>
         </Card>
         <Card>
@@ -94,6 +96,7 @@ export default async function AuthorDashboardPage() {
         </Card>
       </div>
 
+      {/* Books */}
       <section className="space-y-4">
         <h2 className="text-xl font-semibold">My Books</h2>
         {authorProfile.books.length > 0 ? (
@@ -111,7 +114,7 @@ export default async function AuthorDashboardPage() {
               {authorProfile.books.map((book) => (
                 <TableRow key={book.id}>
                   <TableCell className="font-medium">{book.title}</TableCell>
-                  <TableCell>${book.price.toNumber().toFixed(2)}</TableCell>
+                  <TableCell>₦{book.price.toNumber().toFixed(2)}</TableCell>
                   <TableCell>
                     <Badge variant={bookStatusVariant[book.status]}>{book.status}</Badge>
                   </TableCell>
@@ -138,33 +141,39 @@ export default async function AuthorDashboardPage() {
         )}
       </section>
 
+      {/* Withdrawals */}
       <section className="space-y-4">
-        <h2 className="text-xl font-semibold">Withdrawal Requests</h2>
-        {authorProfile.withdrawalRequests.length > 0 ? (
+        <h2 className="text-xl font-semibold">Withdrawals</h2>
+
+        <WithdrawalRequestForm walletBalance={walletBalance} hasPending={hasPending} />
+
+        {authorProfile.withdrawalRequests.length > 0 && (
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Amount</TableHead>
+                <TableHead>Bank</TableHead>
+                <TableHead>Account</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Requested</TableHead>
+                <TableHead>Note</TableHead>
+                <TableHead>Date</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {authorProfile.withdrawalRequests.map((request) => (
-                <TableRow key={request.id}>
-                  <TableCell>${request.amount.toNumber().toFixed(2)}</TableCell>
+              {authorProfile.withdrawalRequests.map((r) => (
+                <TableRow key={r.id}>
+                  <TableCell className="font-medium">₦{r.amount.toNumber().toFixed(2)}</TableCell>
+                  <TableCell>{r.bankName ?? "—"}</TableCell>
+                  <TableCell>{r.accountNumber ?? "—"}</TableCell>
                   <TableCell>
-                    <Badge variant={withdrawalStatusVariant[request.status]}>
-                      {request.status}
-                    </Badge>
+                    <Badge variant={withdrawalStatusVariant[r.status]}>{r.status}</Badge>
                   </TableCell>
-                  <TableCell>{request.createdAt.toLocaleDateString()}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{r.adminNote ?? "—"}</TableCell>
+                  <TableCell>{r.createdAt.toLocaleDateString()}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
-        ) : (
-          <p className="text-muted-foreground">No withdrawal requests yet.</p>
         )}
       </section>
     </div>

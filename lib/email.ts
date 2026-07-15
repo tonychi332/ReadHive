@@ -98,6 +98,95 @@ export async function sendBookStatusEmail(opts: {
     .catch(console.error);
 }
 
+export async function sendWithdrawalRequestedEmail(opts: {
+  authorName: string;
+  authorEmail: string;
+  amount: number;
+  bankName: string;
+  accountNumber: string;
+  accountName: string;
+  withdrawalId: string;
+}) {
+  if (!resend) return;
+  await resend.emails
+    .send({
+      from: FROM,
+      to: ADMIN_EMAIL,
+      subject: `💸 Withdrawal request: ₦${opts.amount.toFixed(2)} from ${opts.authorName}`,
+      html: wrap(`
+        <h2 style="margin: 0 0 12px; font-size: 22px;">Withdrawal Request</h2>
+        <p><strong>${opts.authorName}</strong> (${opts.authorEmail}) has requested a payout.</p>
+        <table style="border-collapse: collapse; margin: 20px 0; width: 100%; font-size: 14px;">
+          <tr style="background: #fef3c7;">
+            <td style="padding: 8px 12px; font-weight: 600;">Amount</td>
+            <td style="padding: 8px 12px;">₦${opts.amount.toFixed(2)}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 12px; font-weight: 600;">Bank</td>
+            <td style="padding: 8px 12px;">${opts.bankName}</td>
+          </tr>
+          <tr style="background: #fef3c7;">
+            <td style="padding: 8px 12px; font-weight: 600;">Account Number</td>
+            <td style="padding: 8px 12px;">${opts.accountNumber}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 12px; font-weight: 600;">Account Name</td>
+            <td style="padding: 8px 12px;">${opts.accountName}</td>
+          </tr>
+        </table>
+        <a href="${SITE_URL}/dashboard/admin"
+           style="display: inline-block; padding: 12px 24px; background: #d97706; color: #fff; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px;">
+          Process in Admin Dashboard →
+        </a>
+      `),
+    })
+    .catch(console.error);
+}
+
+export async function sendWithdrawalStatusEmail(opts: {
+  authorEmail: string;
+  authorName: string;
+  amount: number;
+  status: "PAID" | "REJECTED";
+  adminNote?: string | null;
+}) {
+  if (!resend) return;
+  const paid = opts.status === "PAID";
+  await resend.emails
+    .send({
+      from: FROM,
+      to: opts.authorEmail,
+      subject: paid
+        ? `✅ Your withdrawal of ₦${opts.amount.toFixed(2)} has been processed`
+        : `Update on your withdrawal request`,
+      html: wrap(
+        paid
+          ? `
+            <h2 style="margin: 0 0 12px; font-size: 22px; color: #15803d;">Withdrawal Processed 🎉</h2>
+            <p>Hi ${opts.authorName},</p>
+            <p>Your withdrawal of <strong>₦${opts.amount.toFixed(2)}</strong> has been approved and sent to your bank account.</p>
+            <p style="font-size: 14px; color: #6b5e4e;">Please allow 1–3 business days for the transfer to reflect in your account.</p>
+            <a href="${SITE_URL}/dashboard/author"
+               style="display: inline-block; margin-top: 16px; padding: 12px 24px; background: #d97706; color: #fff; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px;">
+              View Dashboard →
+            </a>
+          `
+          : `
+            <h2 style="margin: 0 0 12px; font-size: 22px;">Withdrawal Update</h2>
+            <p>Hi ${opts.authorName},</p>
+            <p>Your withdrawal request of <strong>₦${opts.amount.toFixed(2)}</strong> could not be processed at this time.</p>
+            ${opts.adminNote ? `<p style="background: #fef3c7; padding: 12px; border-radius: 6px; font-size: 14px;"><strong>Reason:</strong> ${opts.adminNote}</p>` : ""}
+            <p style="font-size: 14px; color: #6b5e4e;">Your balance has not been deducted. Please contact us if you have questions.</p>
+            <a href="${SITE_URL}/dashboard/author"
+               style="display: inline-block; margin-top: 16px; padding: 12px 24px; background: #d97706; color: #fff; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px;">
+              View Dashboard →
+            </a>
+          `
+      ),
+    })
+    .catch(console.error);
+}
+
 export async function sendPurchaseReceiptEmail(opts: {
   buyerEmail: string;
   buyerName: string;
