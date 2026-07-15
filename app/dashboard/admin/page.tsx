@@ -1,9 +1,11 @@
+import Link from "next/link";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { AdminBookActions } from "@/components/admin-book-actions";
 import { AdminWithdrawalActions } from "@/components/admin-withdrawal-actions";
 import { CommissionRateForm } from "@/components/commission-rate-form";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -52,9 +54,12 @@ export default async function AdminDashboardPage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-10 px-4 py-12">
-      <div>
-        <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-        <p className="text-muted-foreground">Manage books, withdrawals, users, and platform settings</p>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+          <p className="text-muted-foreground">Manage books, withdrawals, users, and platform settings</p>
+        </div>
+        <Button render={<Link href="/dashboard/admin/upload">Upload a book</Link>} />
       </div>
 
       {/* Stats */}
