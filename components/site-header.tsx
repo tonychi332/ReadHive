@@ -73,7 +73,8 @@ export async function SiteHeader() {
         {/* Logo */}
         <Link
           href="/"
-          className="flex items-center gap-2 text-xl font-bold tracking-tight transition-opacity hover:opacity-80"
+          className="flex items-center gap-2 transition-opacity hover:opacity-80"
+          style={{ fontFamily: "var(--font-cormorant), Georgia, serif", fontSize: "22px", fontWeight: 600, letterSpacing: "-0.01em" }}
         >
           <BookHiveLogo />
           <span>
