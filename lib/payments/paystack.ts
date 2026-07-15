@@ -4,21 +4,22 @@ import { prisma } from "@/lib/prisma";
 export class PurchaseError extends Error {}
 
 const DEFAULT_COMMISSION_RATE = new Prisma.Decimal(0.4);
+const PAYSTACK_BASE = "https://api.paystack.co";
+
+function paystackHeaders() {
+  return {
+    Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY ?? ""}`,
+    "Content-Type": "application/json",
+  };
+}
+
+/* ── Revenue split / purchase recording ─────────────────── */
 
 export async function getCommissionRate() {
   const settings = await prisma.platformSettings.findUnique({ where: { id: 1 } });
   return settings?.commissionRate ?? DEFAULT_COMMISSION_RATE;
 }
 
-/**
- * Records a completed book purchase and applies the author/platform revenue
- * split. This currently simulates an always-successful Paystack payment.
- *
- * To go live with Paystack: initialize a transaction with PAYSTACK_SECRET_KEY,
- * redirect the buyer to the returned authorization_url, then call this
- * function from the webhook/callback handler once Paystack confirms the
- * `charge.success` event instead of calling it directly from the API route.
- */
 export async function purchaseBook(userId: string, bookId: string) {
   const book = await prisma.book.findUnique({ where: { id: bookId } });
   if (!book || book.status !== "APPROVED") {
@@ -39,13 +40,7 @@ export async function purchaseBook(userId: string, bookId: string) {
 
   return prisma.$transaction(async (tx) => {
     const purchase = await tx.purchase.create({
-      data: {
-        userId,
-        bookId,
-        amount,
-        authorEarnings,
-        platformEarnings,
-      },
+      data: { userId, bookId, amount, authorEarnings, platformEarnings },
     });
 
     await tx.authorProfile.update({
@@ -55,4 +50,49 @@ export async function purchaseBook(userId: string, bookId: string) {
 
     return purchase;
   });
+}
+
+/* ── Paystack API helpers ────────────────────────────────── */
+
+export async function initializePayment(opts: {
+  email: string;
+  amountNaira: number;
+  bookId: string;
+  userId: string;
+  callbackUrl: string;
+}) {
+  const amountKobo = Math.round(opts.amountNaira * 100);
+  const res = await fetch(`${PAYSTACK_BASE}/transaction/initialize`, {
+    method: "POST",
+    headers: paystackHeaders(),
+    body: JSON.stringify({
+      email: opts.email,
+      amount: amountKobo,
+      currency: "NGN",
+      callback_url: opts.callbackUrl,
+      metadata: { bookId: opts.bookId, userId: opts.userId },
+    }),
+  });
+  const data = await res.json();
+  if (!data.status) throw new Error(data.message ?? "Paystack initialization failed");
+  return data.data as {
+    authorization_url: string;
+    access_code: string;
+    reference: string;
+  };
+}
+
+export async function verifyPayment(reference: string) {
+  const res = await fetch(`${PAYSTACK_BASE}/transaction/verify/${encodeURIComponent(reference)}`, {
+    headers: paystackHeaders(),
+  });
+  const data = await res.json();
+  if (!data.status) throw new Error(data.message ?? "Paystack verification failed");
+  return data.data as {
+    status: string; // "success" | "failed" | "abandoned"
+    amount: number; // in kobo
+    metadata: { bookId?: string; userId?: string };
+    reference: string;
+    customer: { email: string };
+  };
 }

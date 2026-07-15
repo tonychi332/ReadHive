@@ -5,8 +5,15 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { PurchaseActions } from "./purchase-actions";
 
-export default async function BookDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+export default async function BookDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ payment?: string }>;
+}) {
+  const [{ id }, sp] = await Promise.all([params, searchParams]);
+
   const book = await prisma.book.findUnique({
     where: { id },
     include: { author: { include: { user: { select: { name: true } } } } },
@@ -55,7 +62,7 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
             </p>
           </div>
           {book.category && <Badge variant="secondary">{book.category}</Badge>}
-          <p className="text-2xl font-semibold">${book.price.toNumber().toFixed(2)}</p>
+          <p className="text-2xl font-semibold">₦{book.price.toNumber().toFixed(2)}</p>
           <p className="leading-relaxed text-muted-foreground">{book.description}</p>
 
           <PurchaseActions
@@ -64,6 +71,7 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
             isOwned={isOwned}
             isFavourited={isFavourited}
             fileUrl={book.fileUrl}
+            paymentResult={sp.payment ?? null}
           />
         </div>
       </div>

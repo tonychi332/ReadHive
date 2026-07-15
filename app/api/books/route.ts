@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { bookSchema } from "@/lib/validation";
+import { sendBookSubmittedEmail } from "@/lib/email";
 
 export async function POST(req: Request) {
   const session = await auth();
@@ -31,6 +32,13 @@ export async function POST(req: Request) {
       authorId: session.user.authorProfileId,
       status: "PENDING",
     },
+  });
+
+  // Notify admin — fire-and-forget, does not block the response
+  void sendBookSubmittedEmail({
+    bookTitle: book.title,
+    authorName: session.user.name ?? "Unknown Author",
+    bookId: book.id,
   });
 
   return NextResponse.json({ book }, { status: 201 });
