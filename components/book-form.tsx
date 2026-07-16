@@ -140,7 +140,7 @@ export function BookForm({ initialValues }: { initialValues?: BookFormValues }) 
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="price">Price (USD)</Label>
+          <Label htmlFor="price">Price (₦ Naira)</Label>
           <Input
             id="price"
             name="price"

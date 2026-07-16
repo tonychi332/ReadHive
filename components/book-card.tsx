@@ -37,7 +37,7 @@ export function BookCard({ book }: { book: BookCardData }) {
         </p>
         <p className="text-sm text-muted-foreground">{book.author.user.name}</p>
         <div className="flex items-center justify-between pt-0.5">
-          <span className="font-bold text-primary">${book.price.toFixed(2)}</span>
+          <span className="font-bold text-primary">₦{book.price.toFixed(2)}</span>
           {book.category && <Badge variant="secondary">{book.category}</Badge>}
         </div>
       </div>
