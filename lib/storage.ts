@@ -52,7 +52,9 @@ export async function createUploadUrl(key: string, contentType: string) {
   const client = getClient(config);
   const command = new PutObjectCommand({ Bucket: config.bucket, Key: key, ContentType: contentType });
   const uploadUrl = await getSignedUrl(client, command, { expiresIn: 5 * 60 });
-  const publicUrl = `${process.env.S3_PUBLIC_URL_BASE ?? config.endpoint}/${config.bucket}/${key}`;
+  // R2 public URLs: https://pub-XXX.r2.dev/{key}  — bucket is implied by the subdomain, NOT in the path
+  const publicBase = (process.env.S3_PUBLIC_URL_BASE ?? config.endpoint).replace(/\/$/, "");
+  const publicUrl = `${publicBase}/${key}`;
 
   return { uploadUrl, publicUrl, key };
 }

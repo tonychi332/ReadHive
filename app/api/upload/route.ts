@@ -11,8 +11,16 @@ const schema = z.object({
 
 export async function POST(req: Request) {
   const session = await auth();
-  if (!session?.user?.authorProfileId) {
+  if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const isAdmin = session.user.role === "ADMIN";
+  const ownerSegment = session.user.authorProfileId ?? session.user.id;
+
+  // Authors must have an author profile; admins can upload without one
+  if (!session.user.authorProfileId && !isAdmin) {
+    return NextResponse.json({ error: "You need an author profile to upload files." }, { status: 403 });
   }
 
   const body = await req.json();
@@ -22,7 +30,7 @@ export async function POST(req: Request) {
   }
 
   const { filename, contentType, kind } = parsed.data;
-  const key = `${kind}/${session.user.authorProfileId}/${Date.now()}-${filename}`;
+  const key = `${kind}/${ownerSegment}/${Date.now()}-${filename}`;
 
   try {
     const result = await createUploadUrl(key, contentType);
